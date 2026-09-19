@@ -15,7 +15,7 @@ const About = (props) => {
     <div className="relative min-h-screen bg-gradient">
       <Header />
 
-      <main className="pt-28 lg:pt-40 xl:pt-28">
+      <main className="pt-18">
         <Navbar />
         <Unisec />
         <Divider />

@@ -1,9 +1,9 @@
 const TextCard = (props) => {
   return (
     <div className="relative h-full">
-      <div className="bg-custom-primary relative rounded-2xl border-2 border-white z-20 p-8 h-full">
-        <h2 className="font-impact text-3xl text-white">{props.title}</h2>
-        <div className="text-sm md:text-base mt-3 text-white/90 leading-relaxed font-helvethaica-med-cond text-xl md:text-2xl">
+      <div className="bg-custom-primary relative rounded-2xl border-2 border-white z-20 p-6 sm:p-8 lg:p-10 h-full flex flex-col justify-start">
+        <h2 className="font-impact text-3xl md:text-4xl text-white mb-4">{props.title}</h2>
+        <div className="text-sm md:text-base leading-relaxed text-white/90">
           {props.description}
         </div>
       </div>

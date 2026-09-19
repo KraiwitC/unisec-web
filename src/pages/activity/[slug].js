@@ -93,7 +93,7 @@ const Blog = (props) => {
           author={props.author}
           cover={props.cover}
         />
-        <main className="pb-20 pt-28">
+        <main className="pb-20 pt-[88px] md:pt-[96px]">
           <Navbar />
           <div className="flex justify-center">
             <Image
@@ -155,7 +155,7 @@ const Blog = (props) => {
           cover={props.cover}
         />
 
-        <main className="pb-20 pt-28">
+        <main className="pb-20 pt-[88px] md:pt-[96px]">
           <Navbar />
           <Parallex
             image={

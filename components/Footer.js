@@ -3,9 +3,9 @@ import Image from "next/image";
 const Footer = () => {
   return (
     <div className="border-t border-white/15">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="glass-panel px-4 sm:px-6">
-          <div className="container grid grid-cols-2 md:grid-cols-2 lg:grid-cols-7 gap-8 py-8 px-6">
+          <div className="container grid grid-cols-2 md:grid-cols-2 lg:grid-cols-7 gap-4 py-8 px-6">
             <div className="flex flex-col justify-center items-center lg:col-span-2 mt-2">
               <div className="justify-center items-center my-auto pr-4">
               <Image
@@ -157,7 +157,7 @@ const Footer = () => {
         </div>
         </div>
       </div>
-      <div className="text-center mt-8 text-sm text-white/70">
+      <div className="text-center mb-2  text-xs sm:text-sm text-white/70 ">
         Copyright © {new Date().getFullYear()} UNISEC Thailand. All rights reserved
       </div>
     </div>

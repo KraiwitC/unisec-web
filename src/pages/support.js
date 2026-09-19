@@ -11,7 +11,7 @@ const Support = (props) => {
     <div className="relative min-h-screen bg-gradient">
       <Header />
 
-      <main className="relative z-10 pt-24 md:pt-32">
+      <main className="relative z-10 pt-22">
         <Navbar />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 md:pb-16">

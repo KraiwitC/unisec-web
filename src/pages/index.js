@@ -5,6 +5,7 @@ import Divider from "../../components/Divider";
 import Footer from "../../components/Footer";
 import Partner from "../../components/Partner";
 import Sponsor from "../../components/Sponsor";
+import Image from "next/image";
 
 import sortByTimestamp from "../../utils/sortByTimestamp";
 import {
@@ -42,19 +43,32 @@ function Home(props) {
       <Header />
       <main className="">
         <Navbar page="home" isClient={isClient} />
-        <div className="pt-24 sm:pt-28 md:pt-36 px-4 lg:px-16 md:px-8">
-          <div className="grid mb-16 md:mb-24 grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <div className="pt-20 sm:pt-24 md:pt-24 px-4 lg:px-16 md:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            
+            {/* Hero Large Logo in `#logo-block` */}
             <div
-              className="hidden md:block min-h-[180px] lg:min-h-[220px]"
+              className="flex justify-center items-center py-4"
               id="logo-block"
-            ></div>
+            >
+              <Image
+                src="/assets/logo-w.webp"
+                width={484}
+                height={160}
+                className="w-[240px] sm:w-[300px] md:w-[360px] lg:w-[420px] h-auto object-contain filter drop-shadow-xl"
+                alt="UNISEC-Thailand"
+                priority
+              />
+            </div>
+
+            {/* Hero Text Box */}
             <div
               className="relative m-2 md:m-4 lg:max-w-[90%] xl:max-w-[85%]"
               id="home-text"
             >
               <div className="bg-custom-primary relative rounded-2xl border-2 border-white z-20">
                 <div
-                  className="p-6 sm:p-8 md:p-10 text-sm md:text-base leading-relaxed"
+                  className="p-6 sm:p-8 lg:p-10 text-sm md:text-base leading-relaxed"
                   data-aos="fade"
                 >
                   UNISEC-Global is an international nonprofit body, consisting
