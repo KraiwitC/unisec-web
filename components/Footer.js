@@ -2,11 +2,12 @@ import Link from "next/link";
 import Image from "next/image";
 const Footer = () => {
   return (
-    <div className="bg-custom-primary-variant bg-opacity-10">
-      <div className="container mx-auto py-2">
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-7 gap-8 py-6 px-6">
-          <div className="flex flex-col justify-center items-center lg:col-span-2">
-            <div className="justify-center items-center my-auto pr-4">
+    <div className="border-t border-white/15">
+      <div className="container mx-auto py-10">
+        <div className="glass-panel px-4 sm:px-6">
+          <div className="container grid grid-cols-2 md:grid-cols-2 lg:grid-cols-7 gap-8 py-8 px-6">
+            <div className="flex flex-col justify-center items-center lg:col-span-2 mt-2">
+              <div className="justify-center items-center my-auto pr-4">
               <Image
                 src="/assets/logo-w.webp"
                 width={200}
@@ -154,8 +155,9 @@ const Footer = () => {
             </ul>
           </div>
         </div>
+        </div>
       </div>
-      <div className="text-center pb-6 px-16 lg:px-0">
+      <div className="text-center mt-8 text-sm text-white/70">
         Copyright © {new Date().getFullYear()} UNISEC Thailand. All rights reserved
       </div>
     </div>

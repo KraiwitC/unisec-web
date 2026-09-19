@@ -148,8 +148,7 @@ function Home(props) {
       <Header />
       <main className="">
         <Navbar page="home" logoStyle={logoStyle} isClient={isClient} />
-        <br></br>
-        <div className="pt-16 px-4 lg:px-16 md:px-8 lg:pb-0">
+        <div className="pt-32 px-4 lg:px-16 md:px-8 lg:pb-0">
           <div className="grid mb-32 grid-cols-1 md:grid-cols-2 md:mb-12">
             <div
               className="grid gap-8"
@@ -163,9 +162,9 @@ function Home(props) {
               id="home-text"
               style={{ display: showHomeText ? "block" : "none" }}
             >
-              <div className="bg-custom-primary relative rounded-2xl border-2 border-white z-20">
+              <div className="bg-custom-primary relative rounded-2xl border-2 border-white z-25">
                 <div
-                  className="p-4 text-sm xl:text-base lg:h-50"
+                  className="p-10 text-sm xl:text-base"
                   data-aos="fade"
                 >
                   UNISEC-Global is an international nonprofit body, consisting
@@ -175,6 +174,7 @@ function Home(props) {
                   mainly at university level.
                 </div>
               </div>
+              {/* Echo layer: keeps the offset depth effect */}
               <div className="absolute w-full top-3 left-3 rounded-2xl bg-custom-primary border-2 border-white z-10 h-full"></div>
             </div>
           </div>

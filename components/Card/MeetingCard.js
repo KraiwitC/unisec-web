@@ -7,8 +7,7 @@ const MeetingCard = (props) => {
     : "/assets/blank.webp";
 
   return (
-    <div className="relative cursor-pointer transform hover:translate-x-2 hover:translate-y-2 transition duration-500">
-      <div className="bg-custom-primary relative rounded-2xl border-2 border-gray-600 z-10 overflow-hidden">
+    <div className="vision-glass glass-transition relative cursor-pointer group/card overflow-hidden">
         <div className="relative">
           <div className="relative w-full pb-[100%] overflow-hidden">
             <Image
@@ -32,8 +31,6 @@ const MeetingCard = (props) => {
             </div>
           </div> */}
         </div>
-      </div>
-      <div className="absolute w-full top-2 left-2 rounded-2xl bg-custom-primary border-2 border-gray-600 z-0 h-full"></div>
     </div>
   );
 };

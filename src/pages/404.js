@@ -8,7 +8,7 @@ const custom404 = (props) => {
     <div className="relative min-h-screen">
       <Header />
 
-      <main className="pb-20">
+      <main className="pb-20 pt-28">
         <Navbar />
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
           <h2 className="text-lg">404 | This page could not be found.</h2>

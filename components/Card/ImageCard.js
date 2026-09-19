@@ -1,8 +1,8 @@
 const ImageCard = ({ image, backgroundSize, website }) => {
   const cardContent = (
-    <div className="relative">
+    <div className="vision-glass glass-transition relative p-2">
       <div
-        className="bg-white relative rounded-2xl border-2 border-white z-20"
+        className="bg-white/5 relative rounded-[20px] border border-white/20 overflow-hidden"
         style={{
           paddingTop: "100%",
           backgroundImage: `url('${image}')`,
@@ -10,10 +10,6 @@ const ImageCard = ({ image, backgroundSize, website }) => {
           backgroundSize: backgroundSize || "cover",
           backgroundPosition: "center",
         }}
-      ></div>
-      <div
-        className="absolute w-full top-3 left-3 rounded-2xl bg-custom-primary border-2 border-white z-10"
-        style={{ paddingTop: "100%" }}
       ></div>
     </div>
   );
@@ -24,7 +20,7 @@ const ImageCard = ({ image, backgroundSize, website }) => {
         href={website}
         target="_blank"
         rel="noopener noreferrer"
-        className="block transform transition-transform duration-300"
+        className="block"
         title="Visit website"
       >
         {cardContent}

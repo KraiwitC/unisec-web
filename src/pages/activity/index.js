@@ -10,7 +10,7 @@ const Activity = (props) => {
   return (
     <div className="relative min-h-screen bg-gradient">
       <Header />
-      <main className="pt-20">
+      <main className="pt-28">
         <Navbar />
         <div className="gap-8 xl:px-4">
           <div className="relative my-8">

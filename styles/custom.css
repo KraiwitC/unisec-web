@@ -32,6 +32,11 @@ body {
   background-color: #00204d; /* lighten(#001736, 10%) */
 }
 
+/* Hover effect for nav / menu items (restored from legacy .btn:hover). */
+.btn:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
 @media screen and (max-width: 1024px) {
   .grid-stair {
     > div {

@@ -6,8 +6,7 @@ const HomeCard = (props) => {
     : "/assets/blank.webp";
 
   return (
-    <div className="relative cursor-pointer transform hover:translate-x-1 hover:translate-y-1 transition duration-500">
-      <div className="bg-custom-primary relative rounded-2xl border-2 border-gray-600 z-10">
+    <div className="vision-glass glass-transition relative cursor-pointer group/card overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2 relative">
           <div
             className="rounded-b-none rounded-t-2xl md:rounded-r-none md:rounded-l-2xl lg:rounded-r-none lg:rounded-l-2xl"
@@ -49,8 +48,6 @@ const HomeCard = (props) => {
             </div>
           </div>
         </div>
-      </div>
-      <div className="absolute w-full top-3 left-3 rounded-2xl bg-custom-primary border-2 border-gray-600 z-0 h-full"></div>
     </div>
   );
 };
