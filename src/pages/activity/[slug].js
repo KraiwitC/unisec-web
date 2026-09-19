@@ -117,13 +117,21 @@ const Blog = (props) => {
               <PortableText value={props.body} components={textComponents} />
             </article>
           </div>
-          {props.youtube != "none" && (
-            <div className="container mx-auto p-6 flex justify-center border-b-2 border-white">
-              <iframe
-                width="960"
-                height="540"
-                src={"https://www.youtube.com/embed/" + props.youtube}
-              ></iframe>
+          {props.youtube && props.youtube !== "none" && (
+            <div className="container mx-auto p-4 sm:p-6 flex flex-col items-center border-b-2 border-white">
+              <div className="w-full max-w-[960px] aspect-video rounded-xl overflow-hidden shadow-2xl bg-black/40">
+                <iframe
+                  className="w-full h-full border-0"
+                  src={
+                    props.youtube.includes("http")
+                      ? props.youtube
+                      : "https://www.youtube.com/embed/" + props.youtube
+                  }
+                  title={props.title || "YouTube video"}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
             </div>
           )}
           {props.capture && (
