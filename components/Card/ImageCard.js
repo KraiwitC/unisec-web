@@ -1,6 +1,6 @@
 const ImageCard = ({ image, backgroundSize, website }) => {
   const cardContent = (
-    <div className="vision-glass glass-transition relative p-2">
+    <div className="vision-glass glass-transition relative p-2 rounded-[24px] overflow-hidden">
       <div
         className="bg-white/5 relative rounded-[20px] border border-white/20 overflow-hidden"
         style={{

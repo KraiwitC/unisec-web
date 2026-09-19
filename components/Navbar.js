@@ -8,45 +8,36 @@ const Menus = ({ text, link, isOpen, subMenus }) => (
   <div className="relative group">
     <ActiveLink href={link} activeClassName="btn-active">
       <div
-        className={`relative cursor-pointer h-full text-center flex flex-col justify-center items-center ${isOpen ? "p-2" : "btn"
-          }`}
+        className={`relative cursor-pointer h-full text-center flex flex-col justify-center items-center px-4 py-2 text-sm md:text-base font-medium transition-colors ${
+          isOpen ? "p-2" : "btn"
+        }`}
       >
         {text}
       </div>
     </ActiveLink>
-    <div
-      className={`glass-panel absolute top-full right-0 mt-2 w-full z-50 hidden group-hover:block`}
-    >
-      <ul>
-        {subMenus
-          ? subMenus.map(({ text, link }) => (
+    {subMenus && subMenus.length > 0 ? (
+      <div className="nav-glass absolute top-full right-0 mt-2 w-full z-50 hidden group-hover:block">
+        <ul>
+          {subMenus.map(({ text, link }) => (
             <Link href={link} key={text}>
-              <li
-                className={`cursor-pointer px-4 py-2 text-center hover:bg-custom-primary rounded-md ${isOpen ? "p-2" : "btn"
-                  }`}
-              >
+              <li className="cursor-pointer px-4 py-2 text-center hover:bg-white/10 rounded-md">
                 {text}
               </li>
             </Link>
-          ))
-          : null}
-      </ul>
-    </div>
+          ))}
+        </ul>
+      </div>
+    ) : null}
   </div>
 );
 
-const Navbar = ({ page, logoStyle, isClient }) => {
+const Navbar = ({ page, isClient }) => {
   const [isOpen, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // Toggle "floating pill" state once the page has scrolled past the top.
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
+      setScrolled(window.scrollY >= 50);
     };
 
     handleScroll();
@@ -55,122 +46,39 @@ const Navbar = ({ page, logoStyle, isClient }) => {
   }, []);
 
   const menus = [
-    {
-      text: "Home",
-      link: "/",
-    },
-    {
-      text: "Activity",
-      link: "/activity",
-    },
-    {
-      text: "About us",
-      link: "/about",
-    },
-    {
-      text: "Support us",
-      link: "/support",
-    },
+    { text: "Home", link: "/" },
+    { text: "Activity", link: "/activity" },
+    { text: "About us", link: "/about" },
+    { text: "Support us", link: "/support" },
   ];
 
-  // Homepage hero state: the large, dynamic logo. Prefer the `logoStyle`
-  // prop computed by the home page (it interpolates between the hero pose
-  // and the pill resting pose over the first ~250px of scroll, which gives
-  // us a smooth, scroll-driven scale for free); otherwise fall back to a
-  // centered large layout so the animation still works standalone.
-  const isHome = page === "home" && !!isClient;
-  const heroLogoStyle =
-    logoStyle &&
-    Number.isFinite(logoStyle.left) &&
-    Number.isFinite(logoStyle.top) &&
-    Number.isFinite(logoStyle.width)
-      ? logoStyle
-      : {
-          left:
-            typeof window !== "undefined"
-              ? Math.max(48, (window.innerWidth - 280) / 2)
-              : 48,
-          width: 280,
-          top: 60,
-        };
-
-  // Logo image aspect ratio (484x160) and the inner header height:
-  // h-24 (96px) at the top, h-20 (80px) once scrolled.
-  const LOGO_ASPECT = 160 / 484;
-  const headerHeight = scrolled ? 80 : 96;
-  const logoWidth = heroLogoStyle.width;
-  const logoHeight = logoWidth * LOGO_ASPECT;
-
-  // Final logo geometry (home page only — other pages use the static pill):
-  //  - Hero pose (!scrolled): use the page's style as-is. The logo is
-  //    allowed to extend past the bottom edge of the navbar and overflow
-  //    cleanly below the pill (the logo cell keeps `overflow: visible`, so
-  //    nothing ever clips it).
-  //  - Pill pose (scrolled): snap into a neat, vertically-centered resting
-  //    position inside the pill once the scroll interpolation has settled.
-  const currentLogoStyle = scrolled
-    ? {
-        left: heroLogoStyle.left,
-        width: logoWidth,
-        height: logoHeight,
-        top: (headerHeight - logoHeight) / 2,
-      }
-    : {
-        left: heroLogoStyle.left,
-        width: logoWidth,
-        height: logoHeight,
-        top: heroLogoStyle.top,
-      };
-
-  // At the very top: a subtle frosted surface so the navbar never blends
-  // into the background or looks broken. Once scrolled: the richer
-  // liquid-glass "vision-glass" pill.
-  const panelClasses = scrolled ? "vision-glass" : "nav-glass-top";
+  const isHome = page === "home" && (isClient === undefined ? true : !!isClient);
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-50 px-3 pt-3 transition-all duration-300 ease-out">
-        <div
-          className={`grid grid-cols-3 md:grid-cols-2 xl:grid-cols-3 px-4 !rounded-[28px] transition-all duration-300 ease-out ${panelClasses}`}
-        >
-          <div
-            className={`col-span-2 md:col-span-1 xl:col-span-2 flex items-center px-4 md:px-12 relative overflow-visible transition-all duration-300 ease-out ${
-              scrolled ? "h-20" : "h-24"
-            } z-30 pointer-events-auto`}
-          >
-            <Link href="/" className="relative flex items-center h-full pointer-events-auto">
-              {page === "home" ? (
+      {/* Floating Navbar Pill */}
+      <div className="fixed top-0 left-0 right-0 z-40 px-3 sm:px-6 pt-3 transition-all duration-300 ease-out">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-14 md:h-16 !rounded-full nav-glass">
+          {/* Logo placeholder inside navbar pill */}
+          <div className="flex items-center h-full">
+            {!isHome ? (
+              <Link href="/" className="flex items-center h-full">
                 <Image
                   src="/assets/logo-w.webp"
                   width={484}
                   height={160}
-                  className="nav-hero-logo cursor-pointer absolute transition-[width,height,left,top] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                  style={{
-                    left: `${currentLogoStyle.left}px`,
-                    top: `${currentLogoStyle.top}px`,
-                    width: `${currentLogoStyle.width}px`,
-                    height: `${currentLogoStyle.height}px`, // Hero pose may overflow the pill below
-                    transform: "translateZ(0)", // Hardware acceleration
-                  }}
+                  className="w-[72px] md:w-[85px] h-auto object-contain cursor-pointer"
                   alt="UNISEC-Thailand"
                   priority
                 />
-              ) : (
-                // Sleek pill: logo scales down slightly once scrolled.
-                <Image
-                  src="/assets/logo-w.webp"
-                  width={484}
-                  height={160}
-                  className={`cursor-pointer w-auto object-contain transition-[width,height,transform] duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                    scrolled ? "h-8 md:h-10" : "h-10 md:h-12"
-                  }`}
-                  alt="UNISEC-Thailand"
-                  priority
-                />
-              )}
-            </Link>
+              </Link>
+            ) : (
+              <div className="w-[72px] md:w-[85px] h-full" />
+            )}
           </div>
-          <div className={`hidden md:grid grid-cols-4 px-4`}>
+
+          {/* Desktop Nav Links */}
+          <div className="hidden md:flex items-center space-x-1 lg:space-x-4">
             {menus.map(({ text, link, children }, i) => (
               <Menus
                 key={i}
@@ -181,26 +89,49 @@ const Navbar = ({ page, logoStyle, isClient }) => {
               />
             ))}
           </div>
-          <div className="flex md:hidden flex-col justify-center items-end px-12">
-            <Hamburger toggled={isOpen} toggle={setOpen} />
-            <div
-              className={`glass-panel ${isOpen ? "block" : "hidden"
-                } absolute top-full right-0 mt-2 w-2/3 p-2`}
-            >
-              {menus.map(({ text, link, children }, i) => (
-                <Menus
-                  key={i}
-                  text={text}
-                  link={link}
-                  isOpen={isOpen}
-                  subMenus={children}
-                />
-              ))}
-            </div>
+
+          {/* Mobile Hamburger */}
+          <div className="flex md:hidden items-center">
+            <Hamburger toggled={isOpen} toggle={setOpen} size={18} />
+            {isOpen && (
+              <div className="nav-glass absolute top-full right-3 mt-2 w-52 p-3 z-50 rounded-2xl">
+                {menus.map(({ text, link, children }, i) => (
+                  <Menus
+                    key={i}
+                    text={text}
+                    link={link}
+                    isOpen={isOpen}
+                    subMenus={children}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Discrete 2-State Dynamic Logo for Homepage */}
+      {isHome && (
+        <Link
+          href="/"
+          className={`fixed z-50 pointer-events-auto transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            scrolled
+              ? "left-7 sm:left-10 md:left-14 lg:left-20 xl:left-28 top-4 md:top-5 w-[72px] md:w-[85px]"
+              : "left-6 sm:left-12 md:left-16 lg:left-24 xl:left-32 top-20 md:top-24 xl:top-28 w-[220px] sm:w-[260px] md:w-[320px] lg:w-[360px] xl:w-[400px]"
+          }`}
+        >
+          <Image
+            src="/assets/logo-w.webp"
+            width={484}
+            height={160}
+            className="w-full h-auto object-contain nav-hero-logo cursor-pointer filter drop-shadow-lg"
+            alt="UNISEC-Thailand"
+            priority
+          />
+        </Link>
+      )}
     </>
   );
 };
+
 export default Navbar;

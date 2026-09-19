@@ -53,73 +53,51 @@ body {
    --------------------------------------------- */
 .vision-glass,
 .glass-panel {
-    background: rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(32px) saturate(200%);
-    -webkit-backdrop-filter: blur(32px) saturate(200%);
-    border: 1px solid rgba(255, 255, 255, 0.24);
-    box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4),
-        0 20px 40px rgba(0, 0, 0, 0.4);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
+        0 16px 36px rgba(0, 0, 0, 0.35);
     border-radius: 24px;
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: transform, background, box-shadow;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                background 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ---------------------------------------------
-   Navbar — home hero pose
-   ---------------------------------------------
-   At the very top of the homepage the hero logo is allowed to escape
-   the navbar pill and extend downwards below the panel. The logo cell
-   keeps `overflow: visible` (set in the component) so nothing clips the
-   overflow, and a soft drop shadow keeps the extended logo read as a
-   crisp element floating over the content beneath. Once the user
-   scrolls past the top, the page interpolates the pose over the first
-   ~250px and the Navbar settles the logo into a neat, centered rest
-   inside the pill. */
+.nav-glass {
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 28px;
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
+        0 12px 32px rgba(2, 6, 23, 0.4);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .nav-hero-logo {
-    will-change: width, height, top, left;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    filter: drop-shadow(0 28px 44px rgba(2, 6, 23, 0.55))
-        drop-shadow(0 4px 10px rgba(2, 6, 23, 0.35));
+    will-change: transform, width, height, top, left;
+    filter: drop-shadow(0 20px 30px rgba(2, 6, 23, 0.55));
 }
 
-/* Frosted resting surface for the navbar pill at the top of the page —
-   kept intentionally lighter than .vision-glass so the hero state reads
-   as a quiet glass layer, then "fills" with liquid glass on scroll. */
-.nav-glass-top {
-    background: rgba(15, 23, 42, 0.45);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18),
-        0 10px 30px rgba(2, 6, 23, 0.35);
-}
-
-/* Extremely smooth, spring-like glass transition + hover lift (buttery) */
 .glass-transition {
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: transform, background, box-shadow;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                background 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Non-interactive elements or pure panels should not scale/animate on hover unless explicitly interactive */
-.glass-panel:not(a):not(button):not(.cursor-pointer):hover,
-.glass-transition:not(a):not(button):not(.cursor-pointer):hover {
-    transform: none;
-    background: rgba(255, 255, 255, 0.12);
-    box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4),
-        0 20px 40px rgba(0, 0, 0, 0.4);
-    border-color: rgba(255, 255, 255, 0.24);
-}
-
-.glass-panel.cursor-pointer:hover,
+.vision-glass.cursor-pointer:hover,
 .glass-transition.cursor-pointer:hover,
-a .glass-panel:hover,
-a .glass-transition:hover {
-    transform: scale(1.02);
-    background: rgba(255, 255, 255, 0.16);
-    box-shadow: inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.5),
-        0 28px 56px rgba(0, 0, 0, 0.45);
-    border-color: rgba(255, 255, 255, 0.32);
+.group\/card:hover .vision-glass,
+a .vision-glass:hover {
+    transform: translateY(-2px) scale(1.01);
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.35),
+        0 24px 48px rgba(0, 0, 0, 0.45);
+    border-color: rgba(255, 255, 255, 0.28);
 }
 
 a {
