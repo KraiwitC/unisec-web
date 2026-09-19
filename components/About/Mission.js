@@ -2,8 +2,8 @@ import TextCard from "../Card/TextCard";
 
 const Mission = () => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <div className="px-8 md:px-16 lg:px-8 xl:px-32 pb-16 pt-16 lg:py-16 grid grid-cols-1 gap-8 md:gap-16">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-stretch">
         <div className="flex flex-col justify-center w-full" data-aos="fade-up">
           <TextCard
             title="Our Mission"

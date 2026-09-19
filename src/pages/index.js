@@ -5,6 +5,7 @@ import Divider from "../../components/Divider";
 import Footer from "../../components/Footer";
 import Partner from "../../components/Partner";
 import Sponsor from "../../components/Sponsor";
+import Image from "next/image";
 
 import sortByTimestamp from "../../utils/sortByTimestamp";
 import {
@@ -12,22 +13,14 @@ import {
   getPartners,
   getSponsors,
 } from "../sanity/sanityClient";
-import { useRouter } from "next/router";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 
 function Home(props) {
   let banners = sortByTimestamp(props.banners);
   const [index, setIndex] = useState(0);
-  const [logoStyle, setLogoStyle] = useState({
-    left: 48,
-    width: 121,
-    top: 11,
-  });
-  const [logoBlockHeight, setLogoBlockHeight] = useState(0);
-  const [showHomeText, setShowHomeText] = useState(true);
   const [isClient, setIsClient] = useState(false);
 
-  if (banners.length == 0) {
+  if (banners.length === 0) {
     banners.push({
       title: "No Banner",
     });
@@ -45,127 +38,37 @@ function Home(props) {
     return () => clearInterval(interval);
   }, [banners.length]);
 
-  const handleScroll = useCallback(() => {
-    if (!isClient) return;
-
-    try {
-      let userWidth = window.innerWidth;
-      var pp = ((250 - window.scrollY) / 250) * 100;
-      if (pp < 0) pp = 0;
-      if (pp > 100) pp = 100;
-
-      if (userWidth > 960) {
-        var maxWidth = 420;
-        const newStyle = {
-          left: 48 + (((userWidth / 2 - maxWidth) / 2 - 48) / 100) * pp,
-          width: 121 + ((maxWidth - 121) / 100) * pp,
-          top: 11 + ((60 - 11) / 100) * pp,
-        };
-        setLogoStyle(newStyle);
-        setShowHomeText(true);
-        setLogoBlockHeight(0);
-      } else if (userWidth < 768) {
-        var ppMax = 0.4 * userWidth - 28.6;
-        var pp = ((ppMax - window.scrollY) / ppMax) * 100;
-        if (pp < 0) pp = 0;
-        if (pp > 100) pp = 100;
-        var maxWidth = userWidth - 260;
-        var offsetTopFactor = 0.22;
-        var offsetLeftFactor = 0.8;
-        if (userWidth < 560) {
-          maxWidth = userWidth - 120;
-          offsetTopFactor = 0.5;
-          offsetLeftFactor = 0.2;
-        }
-        const newStyle = {
-          left: 48 + offsetLeftFactor * pp,
-          width: 121 + ((maxWidth - 121) / 100) * pp,
-          top: 11 + offsetTopFactor * pp,
-        };
-        setLogoStyle(newStyle);
-        setLogoBlockHeight((maxWidth / 113) * 40 - 50);
-        setShowHomeText(false);
-      } else {
-        var maxWidth = userWidth / 2 - 121;
-        // Get home text height safely
-        const homeTextElement = document.getElementById("home-text");
-        var offsetTop = homeTextElement
-          ? (homeTextElement.offsetHeight - 200) / 2
-          : 0;
-
-        const newStyle = {
-          left: 48,
-          width: 121 + ((maxWidth - 121) / 100) * pp,
-          top: 11 + ((100 + offsetTop - 11) / 100) * pp,
-        };
-        setLogoStyle(newStyle);
-        setShowHomeText(true);
-        setLogoBlockHeight(0);
-      }
-    } catch (e) {
-      console.warn("Scroll handler error:", e);
-    }
-  }, [isClient, setLogoStyle, setShowHomeText, setLogoBlockHeight]);
-
-  const memoizedHandleScroll = useCallback(() => {
-    handleScroll();
-  }, [handleScroll]);
-
-  // Throttled scroll handler for better mobile performance
-  const throttledScrollHandler = useCallback(() => {
-    if (typeof window !== "undefined" && window.requestAnimationFrame) {
-      window.requestAnimationFrame(memoizedHandleScroll);
-    } else {
-      memoizedHandleScroll();
-    }
-  }, [memoizedHandleScroll]);
-
-  const router = useRouter();
-  useEffect(() => {
-    if (!isClient) return;
-
-    // Use passive listeners for better mobile performance
-    window.addEventListener("scroll", throttledScrollHandler, {
-      passive: true,
-    });
-    window.addEventListener("resize", throttledScrollHandler, {
-      passive: true,
-    });
-    router.events.on("routeChangeComplete", memoizedHandleScroll);
-
-    // Initial call
-    memoizedHandleScroll();
-
-    return () => {
-      window.removeEventListener("scroll", throttledScrollHandler);
-      window.removeEventListener("resize", throttledScrollHandler);
-      router.events.off("routeChangeComplete", memoizedHandleScroll);
-    };
-  }, [router.events, isClient, memoizedHandleScroll, throttledScrollHandler]);
-
   return (
     <div className="relative min-h-screen bg-gradient">
       <Header />
       <main className="">
-        <Navbar page="home" logoStyle={logoStyle} isClient={isClient} />
-        <br></br>
-        <div className="pt-16 px-4 lg:px-16 md:px-8 lg:pb-0">
-          <div className="grid mb-32 grid-cols-1 md:grid-cols-2 md:mb-12">
+        <Navbar page="home" isClient={isClient} />
+        <div className="pt-20 sm:pt-24 md:pt-24 px-4 lg:px-16 md:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            
+            {/* Hero Large Logo in `#logo-block` */}
             <div
-              className="grid gap-8"
+              className="flex justify-center items-center py-4"
               id="logo-block"
-              style={{
-                height: logoBlockHeight > 0 ? `${logoBlockHeight}px` : "auto",
-              }}
-            ></div>
+            >
+              <Image
+                src="/assets/logo-w.webp"
+                width={484}
+                height={160}
+                className="w-[240px] sm:w-[300px] md:w-[360px] lg:w-[420px] h-auto object-contain filter drop-shadow-xl"
+                alt="UNISEC-Thailand"
+                priority
+              />
+            </div>
+
+            {/* Hero Text Box */}
             <div
-              className="relative m-4 lg:max-w-[80%]"
+              className="relative m-2 md:m-4 lg:max-w-[90%] xl:max-w-[85%]"
               id="home-text"
-              style={{ display: showHomeText ? "block" : "none" }}
             >
               <div className="bg-custom-primary relative rounded-2xl border-2 border-white z-20">
                 <div
-                  className="p-4 text-sm xl:text-base lg:h-50"
+                  className="p-6 sm:p-8 lg:p-10 text-sm md:text-base leading-relaxed"
                   data-aos="fade"
                 >
                   UNISEC-Global is an international nonprofit body, consisting

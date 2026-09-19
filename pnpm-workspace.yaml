@@ -4,3 +4,4 @@ allowBuilds:
   unrs-resolver: true
 minimumReleaseAgeExclude:
   - sanity-plugin-media@6.0.3
+  - eslint@10.11.0
