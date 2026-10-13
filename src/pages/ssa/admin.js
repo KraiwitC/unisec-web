@@ -1,5 +1,10 @@
-import SSAMap from "../../../components/SSA/SSAMap";
+import dynamic from "next/dynamic";
 import SSAControls from "../../../components/SSA/SSAControls";
+
+const SSAMap = dynamic(
+  () => import("../../../components/SSA/SSAMap"),
+  { ssr: false }
+);
 
 export default function SSAAdmin() {
   return (

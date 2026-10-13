@@ -1,4 +1,9 @@
-import SSAMap from "../../../components/SSA/SSAMap";
+import dynamic from "next/dynamic";
+
+const SSAMap = dynamic(
+  () => import("../../../components/SSA/SSAMap"),
+  { ssr: false }
+);
 
 export default function SSA() {
   return (
