@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
+
 import L from "leaflet";
 
 import {
@@ -9,6 +15,8 @@ import {
   Rectangle,
   GeoJSON,
   Marker,
+  useMap,
+  useMapEvents,
 } from "react-leaflet";
 
 import { generateGroundStations } from "./mapUtils";
@@ -22,7 +30,7 @@ const N_TEAMS = 14;
 
 const DEFAULT_ZONE_SIZE = 50;
 
-const MIN_GS_DISTANCE = 18;
+const MIN_GS_DISTANCE = 25;
 
 const PLAY_LON_MIN = -180;
 const PLAY_LON_MAX = 180;
@@ -32,6 +40,8 @@ const PLAY_LAT_MAX = 84;
 
 const GRID_ROWS = 3;
 const GRID_COLS = 3;
+
+const ZONE_ZOOM_FACTOR = 2.0;
 
 
 const COLORS = [
@@ -229,12 +239,413 @@ function createGridLabelIcon(id) {
 
 
 // =====================================================
+// COLOR HELPER
+// =====================================================
+
+function hexToRgba(hex, alpha) {
+  const h = hex.replace("#", "");
+
+  const r =
+    parseInt(h.slice(0, 2), 16);
+
+  const g =
+    parseInt(h.slice(2, 4), 16);
+
+  const b =
+    parseInt(h.slice(4, 6), 16);
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+
+// =====================================================
+// COVERAGE ZONES
+// =====================================================
+
+function CoverageZones({
+  groundStations,
+}) {
+  const map = useMap();
+
+  const overlayRef =
+    useRef(null);
+
+  const baseZoneZoomRef =
+    useRef(null);
+
+
+  // -----------------------------------------------------
+  // CREATE COVERAGE PANE
+  // -----------------------------------------------------
+
+  useEffect(() => {
+    let pane =
+      map.getPane("coveragePane");
+
+    if (!pane) {
+      pane =
+        map.createPane(
+          "coveragePane"
+        );
+    }
+
+    pane.style.zIndex = "450";
+    pane.style.pointerEvents =
+      "none";
+
+
+    const overlay =
+      document.createElement(
+        "div"
+      );
+
+    overlay.style.position =
+      "absolute";
+
+    overlay.style.pointerEvents =
+      "none";
+
+    overlay.style.overflow =
+      "hidden";
+
+    pane.appendChild(
+      overlay
+    );
+
+    overlayRef.current =
+      overlay;
+
+
+    // MapContainer already fitted to playBounds.
+    // Use this zoom as the visual baseline.
+    const timer =
+      setTimeout(() => {
+        baseZoneZoomRef.current =
+          map.getZoom();
+      }, 0);
+
+
+    return () => {
+      clearTimeout(timer);
+
+      if (
+        overlay.parentNode
+      ) {
+        overlay.parentNode.removeChild(
+          overlay
+        );
+      }
+
+      overlayRef.current =
+        null;
+    };
+  }, [map]);
+
+
+  // -----------------------------------------------------
+  // PLAYABLE RECTANGLE IN LAYER PIXELS
+  // -----------------------------------------------------
+
+  const getPlayLayerBounds =
+    useCallback(() => {
+
+      const nw =
+        map.latLngToLayerPoint([
+          PLAY_LAT_MAX,
+          PLAY_LON_MIN,
+        ]);
+
+      const se =
+        map.latLngToLayerPoint([
+          PLAY_LAT_MIN,
+          PLAY_LON_MAX,
+        ]);
+
+
+      const left =
+        Math.min(
+          nw.x,
+          se.x
+        );
+
+      const right =
+        Math.max(
+          nw.x,
+          se.x
+        );
+
+      const top =
+        Math.min(
+          nw.y,
+          se.y
+        );
+
+      const bottom =
+        Math.max(
+          nw.y,
+          se.y
+        );
+
+
+      return {
+        left,
+        right,
+        top,
+        bottom,
+
+        width:
+          right - left,
+
+        height:
+          bottom - top,
+      };
+
+    }, [map]);
+
+
+  // -----------------------------------------------------
+  // ZONE RADIUS IN PIXELS
+  // -----------------------------------------------------
+
+  const getZoneRadiusPx =
+    useCallback(
+      (gs) => {
+
+        const zoom =
+          map.getZoom();
+
+        const baseZoom =
+          baseZoneZoomRef.current === null
+            ? zoom
+            : baseZoneZoomRef.current;
+
+        const zoomSteps =
+          zoom - baseZoom;
+
+        const scale =
+          Math.pow(
+            ZONE_ZOOM_FACTOR,
+            zoomSteps
+          );
+
+        // Same formula as original game.
+        return (
+          gs.zoneSize /
+          1.1
+        ) * scale;
+
+      },
+      [map]
+    );
+
+
+  // -----------------------------------------------------
+  // DRAW COVERAGE
+  // -----------------------------------------------------
+
+  const drawCoverageZones =
+    useCallback(() => {
+
+      const overlay =
+        overlayRef.current;
+
+      if (!overlay) {
+        return;
+      }
+
+
+      const bounds =
+        getPlayLayerBounds();
+
+
+      overlay.innerHTML = "";
+
+      overlay.style.left =
+        `${bounds.left}px`;
+
+      overlay.style.top =
+        `${bounds.top}px`;
+
+      overlay.style.width =
+        `${bounds.width}px`;
+
+      overlay.style.height =
+        `${bounds.height}px`;
+
+
+      for (
+        const gs of groundStations
+      ) {
+
+        const center =
+          map.latLngToLayerPoint([
+            gs.lat,
+            gs.lon,
+          ]);
+
+
+        const localX =
+          center.x -
+          bounds.left;
+
+        const localY =
+          center.y -
+          bounds.top;
+
+
+        const radius =
+          getZoneRadiusPx(gs);
+
+
+        // Original position
+        // + one copy to the left
+        // + one copy to the right.
+        //
+        // overflow:hidden clips
+        // anything outside play area.
+
+        for (
+          const shiftX of [
+            -bounds.width,
+            0,
+            bounds.width,
+          ]
+        ) {
+
+          const circle =
+            document.createElement(
+              "div"
+            );
+
+
+          circle.style.position =
+            "absolute";
+
+          circle.style.borderRadius =
+            "50%";
+
+          circle.style.boxSizing =
+            "border-box";
+
+          circle.style.pointerEvents =
+            "none";
+
+
+          circle.style.left =
+            `${
+              localX +
+              shiftX -
+              radius
+            }px`;
+
+
+          circle.style.top =
+            `${
+              localY -
+              radius
+            }px`;
+
+
+          circle.style.width =
+            `${
+              radius * 2
+            }px`;
+
+
+          circle.style.height =
+            `${
+              radius * 2
+            }px`;
+
+
+          circle.style.border =
+            `2px solid ${
+              hexToRgba(
+                gs.color,
+                0.4
+              )
+            }`;
+
+
+          circle.style.background =
+            hexToRgba(
+              gs.color,
+              0.15
+            );
+
+
+          overlay.appendChild(
+            circle
+          );
+        }
+      }
+
+    }, [
+      groundStations,
+      map,
+      getPlayLayerBounds,
+      getZoneRadiusPx,
+    ]);
+
+
+  // -----------------------------------------------------
+  // REDRAW WHEN GS CHANGES
+  // -----------------------------------------------------
+
+  useEffect(() => {
+    const timer =
+      setTimeout(() => {
+
+        if (
+          baseZoneZoomRef.current === null
+        ) {
+          baseZoneZoomRef.current =
+            map.getZoom();
+        }
+
+        drawCoverageZones();
+
+      }, 0);
+
+
+    return () =>
+      clearTimeout(timer);
+
+  }, [
+    groundStations,
+    map,
+    drawCoverageZones,
+  ]);
+
+
+  // -----------------------------------------------------
+  // REDRAW AFTER MAP MOVES / ZOOMS
+  // -----------------------------------------------------
+
+  useMapEvents({
+    zoomend: () => {
+      drawCoverageZones();
+    },
+
+    moveend: () => {
+      drawCoverageZones();
+    },
+  });
+
+
+  return null;
+}
+
+
+// =====================================================
 // COMPONENT
 // =====================================================
 
 export default function SSAMap() {
-  const [countries, setCountries] =
-    useState(null);
+  const [
+    countries,
+    setCountries,
+  ] = useState(null);
 
   const [
     groundStations,
@@ -247,10 +658,13 @@ export default function SSAMap() {
   // -----------------------------------------------------
 
   useEffect(() => {
+
     fetch(
       "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson"
     )
+
       .then((res) => {
+
         if (!res.ok) {
           throw new Error(
             `HTTP ${res.status}`
@@ -265,11 +679,14 @@ export default function SSAMap() {
       })
 
       .catch((err) => {
+
         console.error(
           "Failed to load countries:",
           err
         );
+
       });
+
   }, []);
 
 
@@ -278,29 +695,40 @@ export default function SSAMap() {
   // -----------------------------------------------------
 
   useEffect(() => {
-    if (!countries) return;
+
+    if (!countries) {
+      return;
+    }
+
 
     const stations =
       generateGroundStations({
-        grids: GAME_GRIDS,
+
+        grids:
+          GAME_GRIDS,
 
         countriesGeoJSON:
           countries,
 
-        colors: COLORS,
+        colors:
+          COLORS,
 
-        nTeams: N_TEAMS,
+        nTeams:
+          N_TEAMS,
 
         minDistance:
           MIN_GS_DISTANCE,
 
         defaultZoneSize:
           DEFAULT_ZONE_SIZE,
+
       });
+
 
     setGroundStations(
       stations
     );
+
   }, [countries]);
 
 
@@ -309,6 +737,7 @@ export default function SSAMap() {
       PLAY_LAT_MIN,
       PLAY_LON_MIN,
     ],
+
     [
       PLAY_LAT_MAX,
       PLAY_LON_MAX,
@@ -317,14 +746,20 @@ export default function SSAMap() {
 
 
   return (
+
     <div
       style={{
         width: "100%",
         height: "80vh",
       }}
     >
+
       <MapContainer
-        bounds={playBounds}
+
+        bounds={
+          playBounds
+        }
+
         boundsOptions={{
           padding: [4, 4],
         }}
@@ -339,19 +774,26 @@ export default function SSAMap() {
           [85, 180],
         ]}
 
-        maxBoundsViscosity={0.85}
+        maxBoundsViscosity={
+          0.85
+        }
 
         style={{
           width: "100%",
           height: "100%",
-          background: "#cfe8ff",
+          background:
+            "#cfe8ff",
         }}
 
-        scrollWheelZoom={true}
+        scrollWheelZoom={
+          true
+        }
+
       >
 
         <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
+          attribution=
+            "&copy; OpenStreetMap contributors"
 
           url=
             "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -361,17 +803,39 @@ export default function SSAMap() {
         {/* COUNTRY BOUNDARIES */}
 
         {countries && (
+
           <GeoJSON
-            data={countries}
+
+            data={
+              countries
+            }
 
             style={{
-              color: "#ffffff",
-              weight: 0.8,
-              opacity: 0.5,
-              fillOpacity: 0,
+              color:
+                "#ffffff",
+
+              weight:
+                0.8,
+
+              opacity:
+                0.5,
+
+              fillOpacity:
+                0,
             }}
+
           />
+
         )}
+
+
+        {/* COVERAGE BELOW MARKERS */}
+
+        <CoverageZones
+          groundStations={
+            groundStations
+          }
+        />
 
 
         {/* 3 × 3 GRID */}
@@ -387,6 +851,7 @@ export default function SSAMap() {
               ) *
               0.09;
 
+
             const labelLon =
               grid.lonMin +
               (
@@ -395,7 +860,9 @@ export default function SSAMap() {
               ) *
               0.08;
 
+
             return (
+
               <div
                 key={
                   `grid-${grid.id}`
@@ -403,6 +870,7 @@ export default function SSAMap() {
               >
 
                 <Rectangle
+
                   bounds={[
                     [
                       grid.latMin,
@@ -416,17 +884,29 @@ export default function SSAMap() {
                   ]}
 
                   pathOptions={{
-                    color: "#ffffff",
-                    weight: 1.8,
-                    opacity: 0.75,
-                    fill: false,
+
+                    color:
+                      "#ffffff",
+
+                    weight:
+                      1.8,
+
+                    opacity:
+                      0.75,
+
+                    fill:
+                      false,
+
                     dashArray:
                       "8,6",
+
                   }}
+
                 />
 
 
                 <Marker
+
                   position={[
                     labelLat,
                     labelLon,
@@ -438,10 +918,14 @@ export default function SSAMap() {
                     )
                   }
 
-                  interactive={false}
+                  interactive={
+                    false
+                  }
+
                 />
 
               </div>
+
             );
           }
         )}
@@ -451,8 +935,12 @@ export default function SSAMap() {
 
         {groundStations.map(
           (gs) => (
+
             <Marker
-              key={gs.id}
+
+              key={
+                gs.id
+              }
 
               position={[
                 gs.lat,
@@ -468,11 +956,14 @@ export default function SSAMap() {
               title={
                 `GS ${gs.id} • Grid ${gs.gridId}`
               }
+
             />
+
           )
         )}
 
       </MapContainer>
+
     </div>
   );
 }
