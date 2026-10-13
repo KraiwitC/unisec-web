@@ -1,10 +1,11 @@
 "use client";
 
 import {
+  Fragment,
+  useCallback,
   useEffect,
   useRef,
   useState,
-  useCallback,
 } from "react";
 
 import L from "leaflet";
@@ -20,6 +21,7 @@ import {
 } from "react-leaflet";
 
 import { generateGroundStations } from "./mapUtils";
+import SSAControls from "./SSAControls";
 
 
 // =====================================================
@@ -27,9 +29,7 @@ import { generateGroundStations } from "./mapUtils";
 // =====================================================
 
 const N_TEAMS = 14;
-
 const DEFAULT_ZONE_SIZE = 50;
-
 const MIN_GS_DISTANCE = 25;
 
 const PLAY_LON_MIN = -180;
@@ -274,9 +274,7 @@ function CoverageZones({
     useRef(null);
 
 
-  // -----------------------------------------------------
   // CREATE COVERAGE PANE
-  // -----------------------------------------------------
 
   useEffect(() => {
     let pane =
@@ -316,8 +314,6 @@ function CoverageZones({
       overlay;
 
 
-    // MapContainer already fitted to playBounds.
-    // Use this zoom as the visual baseline.
     const timer =
       setTimeout(() => {
         baseZoneZoomRef.current =
@@ -328,9 +324,7 @@ function CoverageZones({
     return () => {
       clearTimeout(timer);
 
-      if (
-        overlay.parentNode
-      ) {
+      if (overlay.parentNode) {
         overlay.parentNode.removeChild(
           overlay
         );
@@ -342,13 +336,10 @@ function CoverageZones({
   }, [map]);
 
 
-  // -----------------------------------------------------
-  // PLAYABLE RECTANGLE IN LAYER PIXELS
-  // -----------------------------------------------------
+  // PLAYABLE RECTANGLE IN PIXELS
 
   const getPlayLayerBounds =
     useCallback(() => {
-
       const nw =
         map.latLngToLayerPoint([
           PLAY_LAT_MAX,
@@ -361,31 +352,17 @@ function CoverageZones({
           PLAY_LON_MAX,
         ]);
 
-
       const left =
-        Math.min(
-          nw.x,
-          se.x
-        );
+        Math.min(nw.x, se.x);
 
       const right =
-        Math.max(
-          nw.x,
-          se.x
-        );
+        Math.max(nw.x, se.x);
 
       const top =
-        Math.min(
-          nw.y,
-          se.y
-        );
+        Math.min(nw.y, se.y);
 
       const bottom =
-        Math.max(
-          nw.y,
-          se.y
-        );
-
+        Math.max(nw.y, se.y);
 
       return {
         left,
@@ -399,18 +376,14 @@ function CoverageZones({
         height:
           bottom - top,
       };
-
     }, [map]);
 
 
-  // -----------------------------------------------------
-  // ZONE RADIUS IN PIXELS
-  // -----------------------------------------------------
+  // ZONE RADIUS
 
   const getZoneRadiusPx =
     useCallback(
       (gs) => {
-
         const zoom =
           map.getZoom();
 
@@ -428,24 +401,18 @@ function CoverageZones({
             zoomSteps
           );
 
-        // Same formula as original game.
         return (
-          gs.zoneSize /
-          1.1
+          gs.zoneSize / 1.1
         ) * scale;
-
       },
       [map]
     );
 
 
-  // -----------------------------------------------------
   // DRAW COVERAGE
-  // -----------------------------------------------------
 
   const drawCoverageZones =
     useCallback(() => {
-
       const overlay =
         overlayRef.current;
 
@@ -453,10 +420,8 @@ function CoverageZones({
         return;
       }
 
-
       const bounds =
         getPlayLayerBounds();
-
 
       overlay.innerHTML = "";
 
@@ -476,13 +441,11 @@ function CoverageZones({
       for (
         const gs of groundStations
       ) {
-
         const center =
           map.latLngToLayerPoint([
             gs.lat,
             gs.lon,
           ]);
-
 
         const localX =
           center.x -
@@ -492,18 +455,11 @@ function CoverageZones({
           center.y -
           bounds.top;
 
-
         const radius =
           getZoneRadiusPx(gs);
 
 
-        // Original position
-        // + one copy to the left
-        // + one copy to the right.
-        //
-        // overflow:hidden clips
-        // anything outside play area.
-
+        // left / normal / right
         for (
           const shiftX of [
             -bounds.width,
@@ -511,12 +467,10 @@ function CoverageZones({
             bounds.width,
           ]
         ) {
-
           const circle =
             document.createElement(
               "div"
             );
-
 
           circle.style.position =
             "absolute";
@@ -538,25 +492,21 @@ function CoverageZones({
               radius
             }px`;
 
-
           circle.style.top =
             `${
               localY -
               radius
             }px`;
 
-
           circle.style.width =
             `${
               radius * 2
             }px`;
 
-
           circle.style.height =
             `${
               radius * 2
             }px`;
-
 
           circle.style.border =
             `2px solid ${
@@ -566,20 +516,17 @@ function CoverageZones({
               )
             }`;
 
-
           circle.style.background =
             hexToRgba(
               gs.color,
               0.15
             );
 
-
           overlay.appendChild(
             circle
           );
         }
       }
-
     }, [
       groundStations,
       map,
@@ -588,14 +535,11 @@ function CoverageZones({
     ]);
 
 
-  // -----------------------------------------------------
   // REDRAW WHEN GS CHANGES
-  // -----------------------------------------------------
 
   useEffect(() => {
     const timer =
       setTimeout(() => {
-
         if (
           baseZoneZoomRef.current === null
         ) {
@@ -604,23 +548,16 @@ function CoverageZones({
         }
 
         drawCoverageZones();
-
       }, 0);
-
 
     return () =>
       clearTimeout(timer);
-
   }, [
     groundStations,
     map,
     drawCoverageZones,
   ]);
 
-
-  // -----------------------------------------------------
-  // REDRAW AFTER MAP MOVES / ZOOMS
-  // -----------------------------------------------------
 
   useMapEvents({
     zoomend: () => {
@@ -638,10 +575,12 @@ function CoverageZones({
 
 
 // =====================================================
-// COMPONENT
+// MAIN COMPONENT
 // =====================================================
 
-export default function SSAMap() {
+export default function SSAMap({
+  showControls = false,
+}) {
   const [
     countries,
     setCountries,
@@ -652,19 +591,19 @@ export default function SSAMap() {
     setGroundStations,
   ] = useState([]);
 
+  const [
+    selectedGroundStation,
+    setSelectedGroundStation,
+  ] = useState(0);
 
-  // -----------------------------------------------------
+
   // LOAD LAND DATA
-  // -----------------------------------------------------
 
   useEffect(() => {
-
     fetch(
       "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson"
     )
-
       .then((res) => {
-
         if (!res.ok) {
           throw new Error(
             `HTTP ${res.status}`
@@ -679,31 +618,23 @@ export default function SSAMap() {
       })
 
       .catch((err) => {
-
         console.error(
           "Failed to load countries:",
           err
         );
-
       });
-
   }, []);
 
 
-  // -----------------------------------------------------
   // GENERATE 14 GROUND STATIONS
-  // -----------------------------------------------------
 
   useEffect(() => {
-
     if (!countries) {
       return;
     }
 
-
     const stations =
       generateGroundStations({
-
         grids:
           GAME_GRIDS,
 
@@ -721,15 +652,33 @@ export default function SSAMap() {
 
         defaultZoneSize:
           DEFAULT_ZONE_SIZE,
-
       });
-
 
     setGroundStations(
       stations
     );
-
   }, [countries]);
+
+
+  // CHANGE ZONE OF SELECTED GS
+
+  function handleZoneSizeChange(
+    newSize
+  ) {
+    setGroundStations(
+      (previous) =>
+        previous.map(
+          (gs, index) =>
+            index ===
+            selectedGroundStation
+              ? {
+                  ...gs,
+                  zoneSize: newSize,
+                }
+              : gs
+        )
+    );
+  }
 
 
   const playBounds = [
@@ -746,223 +695,240 @@ export default function SSAMap() {
 
 
   return (
-
     <div
       style={{
         width: "100%",
-        height: "80vh",
       }}
     >
 
-      <MapContainer
+      {/* ADMIN CONTROLS */}
 
-        bounds={
-          playBounds
-        }
-
-        boundsOptions={{
-          padding: [4, 4],
-        }}
-
-        minZoom={1}
-        maxZoom={6}
-
-        worldCopyJump={false}
-
-        maxBounds={[
-          [-62, -180],
-          [85, 180],
-        ]}
-
-        maxBoundsViscosity={
-          0.85
-        }
-
-        style={{
-          width: "100%",
-          height: "100%",
-          background:
-            "#cfe8ff",
-        }}
-
-        scrollWheelZoom={
-          true
-        }
-
-      >
-
-        <TileLayer
-          attribution=
-            "&copy; OpenStreetMap contributors"
-
-          url=
-            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-
-        {/* COUNTRY BOUNDARIES */}
-
-        {countries && (
-
-          <GeoJSON
-
-            data={
-              countries
-            }
-
-            style={{
-              color:
-                "#ffffff",
-
-              weight:
-                0.8,
-
-              opacity:
-                0.5,
-
-              fillOpacity:
-                0,
-            }}
-
-          />
-
-        )}
-
-
-        {/* COVERAGE BELOW MARKERS */}
-
-        <CoverageZones
+      {showControls && (
+        <SSAControls
           groundStations={
             groundStations
           }
-        />
 
-
-        {/* 3 × 3 GRID */}
-
-        {GAME_GRIDS.map(
-          (grid) => {
-
-            const labelLat =
-              grid.latMax -
-              (
-                grid.latMax -
-                grid.latMin
-              ) *
-              0.09;
-
-
-            const labelLon =
-              grid.lonMin +
-              (
-                grid.lonMax -
-                grid.lonMin
-              ) *
-              0.08;
-
-
-            return (
-
-              <div
-                key={
-                  `grid-${grid.id}`
-                }
-              >
-
-                <Rectangle
-
-                  bounds={[
-                    [
-                      grid.latMin,
-                      grid.lonMin,
-                    ],
-
-                    [
-                      grid.latMax,
-                      grid.lonMax,
-                    ],
-                  ]}
-
-                  pathOptions={{
-
-                    color:
-                      "#ffffff",
-
-                    weight:
-                      1.8,
-
-                    opacity:
-                      0.75,
-
-                    fill:
-                      false,
-
-                    dashArray:
-                      "8,6",
-
-                  }}
-
-                />
-
-
-                <Marker
-
-                  position={[
-                    labelLat,
-                    labelLon,
-                  ]}
-
-                  icon={
-                    createGridLabelIcon(
-                      grid.id
-                    )
-                  }
-
-                  interactive={
-                    false
-                  }
-
-                />
-
-              </div>
-
-            );
+          selectedGroundStation={
+            selectedGroundStation
           }
-        )}
+
+          onSelectGroundStation={
+            setSelectedGroundStation
+          }
+
+          onZoneSizeChange={
+            handleZoneSizeChange
+          }
+        />
+      )}
 
 
-        {/* GROUND STATIONS */}
+      {/* MAP */}
 
-        {groundStations.map(
-          (gs) => (
+      <div
+        style={{
+          width: "100%",
 
-            <Marker
+          height:
+            showControls
+              ? "72vh"
+              : "80vh",
+        }}
+      >
 
-              key={
-                gs.id
+        <MapContainer
+          bounds={
+            playBounds
+          }
+
+          boundsOptions={{
+            padding: [4, 4],
+          }}
+
+          minZoom={1}
+          maxZoom={6}
+
+          worldCopyJump={
+            false
+          }
+
+          maxBounds={[
+            [-62, -180],
+            [85, 180],
+          ]}
+
+          maxBoundsViscosity={
+            0.85
+          }
+
+          style={{
+            width: "100%",
+            height: "100%",
+            background:
+              "#cfe8ff",
+          }}
+
+          scrollWheelZoom={
+            true
+          }
+        >
+
+          <TileLayer
+            attribution=
+              "&copy; OpenStreetMap contributors"
+
+            url=
+              "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+
+
+          {/* COUNTRY BOUNDARIES */}
+
+          {countries && (
+            <GeoJSON
+              data={
+                countries
               }
 
-              position={[
-                gs.lat,
-                gs.lon,
-              ]}
+              style={{
+                color:
+                  "#ffffff",
 
-              icon={
-                createGroundStationIcon(
-                  gs
-                )
-              }
+                weight:
+                  0.8,
 
-              title={
-                `GS ${gs.id} • Grid ${gs.gridId}`
-              }
+                opacity:
+                  0.5,
 
+                fillOpacity:
+                  0,
+              }}
             />
+          )}
 
-          )
-        )}
 
-      </MapContainer>
+          {/* COVERAGE */}
+
+          <CoverageZones
+            groundStations={
+              groundStations
+            }
+          />
+
+
+          {/* GRID */}
+
+          {GAME_GRIDS.map(
+            (grid) => {
+              const labelLat =
+                grid.latMax -
+                (
+                  grid.latMax -
+                  grid.latMin
+                ) *
+                0.09;
+
+              const labelLon =
+                grid.lonMin +
+                (
+                  grid.lonMax -
+                  grid.lonMin
+                ) *
+                0.08;
+
+              return (
+                <Fragment
+                  key={
+                    `grid-${grid.id}`
+                  }
+                >
+
+                  <Rectangle
+                    bounds={[
+                      [
+                        grid.latMin,
+                        grid.lonMin,
+                      ],
+
+                      [
+                        grid.latMax,
+                        grid.lonMax,
+                      ],
+                    ]}
+
+                    pathOptions={{
+                      color:
+                        "#ffffff",
+
+                      weight:
+                        1.8,
+
+                      opacity:
+                        0.75,
+
+                      fill:
+                        false,
+
+                      dashArray:
+                        "8,6",
+                    }}
+                  />
+
+
+                  <Marker
+                    position={[
+                      labelLat,
+                      labelLon,
+                    ]}
+
+                    icon={
+                      createGridLabelIcon(
+                        grid.id
+                      )
+                    }
+
+                    interactive={
+                      false
+                    }
+                  />
+
+                </Fragment>
+              );
+            }
+          )}
+
+
+          {/* GROUND STATIONS */}
+
+          {groundStations.map(
+            (gs) => (
+              <Marker
+                key={
+                  gs.id
+                }
+
+                position={[
+                  gs.lat,
+                  gs.lon,
+                ]}
+
+                icon={
+                  createGroundStationIcon(
+                    gs
+                  )
+                }
+
+                title={
+                  `GS ${gs.id} • Grid ${gs.gridId}`
+                }
+              />
+            )
+          )}
+
+        </MapContainer>
+
+      </div>
 
     </div>
   );
