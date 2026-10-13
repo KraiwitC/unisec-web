@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isPointOnLand } from "./mapUtils";
 
 import {
   MapContainer,
@@ -54,6 +55,7 @@ export default function SSAMap() {
       .then((data) => setCountries(data))
       .catch((err) => console.error("Failed to load countries:", err));
   }, []);
+  
 
   const latLines = getGridLatitudes();
 

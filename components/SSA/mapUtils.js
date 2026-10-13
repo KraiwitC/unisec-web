@@ -1,5 +1,4 @@
-import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
-import { point } from "@turf/helpers";
+import { booleanPointInPolygon, point } from "@turf/turf";
 
 export function isPointOnLand(lat, lon, countriesGeoJSON) {
   if (!countriesGeoJSON) return false;
