@@ -20,7 +20,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 
-import { generateGroundStations } from "./mapUtils";
+import { generateGroundStations, randomLandPointInGrid } from "./mapUtils";
 import SSAControls from "./SSAControls";
 
 
@@ -209,6 +209,83 @@ function createGroundStationIcon(gs) {
   });
 }
 
+function createSatelliteIcon(satellite) {
+  return L.divIcon({
+    className: "",
+
+    html: `
+      <div
+        style="
+          width:34px;
+          height:34px;
+          position:relative;
+        "
+      >
+        <div
+          style="
+            position:absolute;
+            inset:0;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:34px;
+            line-height:34px;
+            color:${satellite.color};
+            text-shadow:
+              0 0 2px #000,
+              0 0 2px #000;
+          "
+        >
+          ★
+        </div>
+
+        <div
+          style="
+            position:absolute;
+            inset:0;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding-top:1px;
+            font-size:10px;
+            font-weight:900;
+            color:white;
+            text-shadow:
+              -1px -1px 0 #000,
+               1px -1px 0 #000,
+              -1px  1px 0 #000,
+               1px  1px 0 #000;
+          "
+        >
+          ${satellite.id}
+        </div>
+      </div>
+    `,
+
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+  });
+}
+
+function SatellitePane() {
+  const map = useMap();
+
+  useEffect(() => {
+    let pane =
+      map.getPane("satellitePane");
+
+    if (!pane) {
+      pane =
+        map.createPane(
+          "satellitePane"
+        );
+    }
+
+    pane.style.zIndex = "700";
+  }, [map]);
+
+  return null;
+}
 
 function createGridLabelIcon(id) {
   return L.divIcon({
@@ -596,6 +673,12 @@ export default function SSAMap({
     setSelectedGroundStation,
   ] = useState(0);
 
+  const [
+    satellites,
+    setSatellites,
+    ] = useState([]);
+
+  const [round, setRound] = useState(1);
 
   // LOAD LAND DATA
 
@@ -654,6 +737,31 @@ export default function SSAMap({
           DEFAULT_ZONE_SIZE,
       });
 
+      const startingSatellites =
+        stations.map(
+            (gs, index) => ({
+            id: index + 1,
+            name:
+                `Satellite ${index + 1}`,
+
+            color:
+                COLORS[index],
+
+            lon:
+                gs.lon,
+
+            lat:
+                gs.lat,
+
+            targetGroundStation:
+                gs.id,
+            })
+        );
+
+setSatellites(
+  startingSatellites
+);
+
     setGroundStations(
       stations
     );
@@ -680,6 +788,72 @@ export default function SSAMap({
     );
   }
 
+  function handleNextRound() {
+  if (!countries || satellites.length !== N_TEAMS) return;
+
+  // Shuffle grids to spread satellites around the world.
+  const shuffle = (array) => {
+    const result = [...array];
+
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+
+    return result;
+  };
+
+  const gridSequence = [
+    ...shuffle(GAME_GRIDS),
+    ...shuffle(GAME_GRIDS),
+  ];
+
+  const nextSatellites = satellites.map((satellite, index) => {
+    const grid = gridSequence[index];
+
+    const position = randomLandPointInGrid(
+      grid,
+      countries
+    );
+
+    return {
+      ...satellite,
+      lat: position?.lat ?? satellite.lat,
+      lon: position?.lon ?? satellite.lon,
+      targetGroundStation: null,
+    };
+  });
+
+  setSatellites(nextSatellites);
+  setRound((previous) => previous + 1);
+}
+
+function handleResetGame() {
+  if (!countries) return;
+
+  const stations = generateGroundStations({
+    grids: GAME_GRIDS,
+    countriesGeoJSON: countries,
+    colors: COLORS,
+    nTeams: N_TEAMS,
+    minDistance: MIN_GS_DISTANCE,
+    defaultZoneSize: DEFAULT_ZONE_SIZE,
+  });
+
+  const startingSatellites = stations.map((gs, index) => ({
+    id: index + 1,
+    name: `Satellite ${index + 1}`,
+    color: COLORS[index],
+    lat: gs.lat,
+    lon: gs.lon,
+    targetGroundStation: gs.id,
+  }));
+
+  setGroundStations(stations);
+  setSatellites(startingSatellites);
+  setSelectedGroundStation(0);
+  setRound(1);
+}
 
   const playBounds = [
     [
@@ -720,6 +894,12 @@ export default function SSAMap({
           onZoneSizeChange={
             handleZoneSizeChange
           }
+
+          round={round}
+
+          onNextRound={handleNextRound}
+          
+          onResetGame={handleResetGame}
         />
       )}
 
@@ -773,6 +953,7 @@ export default function SSAMap({
             true
           }
         >
+            <SatellitePane />
 
           <TileLayer
             attribution=
@@ -925,6 +1106,16 @@ export default function SSAMap({
               />
             )
           )}
+          {/* SATELLITES — always above Ground Stations */}
+        {satellites.map((satellite) => (
+        <Marker
+            key={`sat-${satellite.id}`}
+            position={[satellite.lat, satellite.lon]}
+            icon={createSatelliteIcon(satellite)}
+            pane="satellitePane"
+            title={`Satellite ${satellite.id}`}
+        />
+        ))}
 
         </MapContainer>
 
