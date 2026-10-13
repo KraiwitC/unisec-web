@@ -1,10 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import {
   MapContainer,
   TileLayer,
   Rectangle,
   Polyline,
+  GeoJSON,
 } from "react-leaflet";
 
 const PLAY_LON_MIN = -180;
@@ -40,6 +43,18 @@ function getGridLatitudes() {
 }
 
 export default function SSAMap() {
+
+  const [countries, setCountries] = useState(null);
+
+  useEffect(() => {
+    fetch(
+      "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson"
+    )
+      .then((res) => res.json())
+      .then((data) => setCountries(data))
+      .catch((err) => console.error("Failed to load countries:", err));
+  }, []);
+
   const latLines = getGridLatitudes();
 
   const lonLines = [
@@ -67,6 +82,18 @@ export default function SSAMap() {
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        {countries && (
+            <GeoJSON
+                data={countries}
+                style={{
+                color: "#ffffff",
+                weight: 0.8,
+                opacity: 0.5,
+                fillOpacity: 0,
+                }}
+            />
+        )}
 
         {/* ขอบสนาม */}
         <Rectangle
