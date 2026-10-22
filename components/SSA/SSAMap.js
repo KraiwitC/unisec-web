@@ -20,17 +20,24 @@ import {
   useMapEvents,
 } from "react-leaflet";
 
-import { generateGroundStations, randomLandPointInGrid } from "./mapUtils";
+import {
+  generateGroundStations,
+  randomLandPointInGrid,
+  isPointOnLand,
+} from "./mapUtils";
+
 import SSAControls from "./SSAControls";
+import SSAEntityControls from "./SSAEntityControls";
+import SSATeamLegend from "./SSATeamLegend";
+import SSASession from "./SSASession";
+import useSharedGame from "./useSharedGame";
+import { N_TEAMS, DEFAULT_ZONE_SIZE, MIN_GS_DISTANCE, COLORS } from "./gameState";
 
 
 // =====================================================
 // GAME SETTINGS
 // =====================================================
 
-const N_TEAMS = 14;
-const DEFAULT_ZONE_SIZE = 50;
-const MIN_GS_DISTANCE = 25;
 
 const PLAY_LON_MIN = -180;
 const PLAY_LON_MAX = 180;
@@ -42,24 +49,6 @@ const GRID_ROWS = 3;
 const GRID_COLS = 3;
 
 const ZONE_ZOOM_FACTOR = 2.0;
-
-
-const COLORS = [
-  "#E6194B", // 1 Red
-  "#3CB44B", // 2 Green
-  "#4363D8", // 3 Blue
-  "#F58231", // 4 Orange
-  "#911EB4", // 5 Purple
-  "#46F0F0", // 6 Cyan
-  "#F032E6", // 7 Magenta
-  "#BFEF45", // 8 Lime
-  "#FABED4", // 9 Pink
-  "#008080", // 10 Teal
-  "#E6BEFF", // 11 Lavender
-  "#9A6324", // 12 Brown
-  "#FFE119", // 13 Yellow
-  "#800000", // 14 Maroon
-];
 
 
 // =====================================================
@@ -339,16 +328,9 @@ function hexToRgba(hex, alpha) {
 // COVERAGE ZONES
 // =====================================================
 
-function CoverageZones({
-  groundStations,
-}) {
+function CoverageZones({ groundStations, baseZoneZoomRef }) {
   const map = useMap();
-
-  const overlayRef =
-    useRef(null);
-
-  const baseZoneZoomRef =
-    useRef(null);
+  const overlayRef = useRef(null);
 
 
   // CREATE COVERAGE PANE
@@ -410,7 +392,7 @@ function CoverageZones({
       overlayRef.current =
         null;
     };
-  }, [map]);
+  }, [map, baseZoneZoomRef]);
 
 
   // PLAYABLE RECTANGLE IN PIXELS
@@ -482,7 +464,7 @@ function CoverageZones({
           gs.zoneSize / 1.1
         ) * scale;
       },
-      [map]
+      [map, baseZoneZoomRef]
     );
 
 
@@ -633,6 +615,7 @@ function CoverageZones({
     groundStations,
     map,
     drawCoverageZones,
+    baseZoneZoomRef,
   ]);
 
 
@@ -654,6 +637,69 @@ function CoverageZones({
 // =====================================================
 // MAIN COMPONENT
 // =====================================================
+function shuffleArray(array) {
+  const result = [...array];
+
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+
+  return result;
+}
+
+function biasedPointNearGroundStation(gs, map, countries, baseZoom) {
+  const nw = map.latLngToContainerPoint([PLAY_LAT_MAX, PLAY_LON_MIN]);
+  const se = map.latLngToContainerPoint([PLAY_LAT_MIN, PLAY_LON_MAX]);
+
+  const left = Math.min(nw.x, se.x);
+  const right = Math.max(nw.x, se.x);
+  const top = Math.min(nw.y, se.y);
+  const bottom = Math.max(nw.y, se.y);
+  const width = right - left;
+
+  if (width <= 0) {
+    return { lat: gs.lat, lon: gs.lon };
+  }
+
+  const center = map.latLngToContainerPoint([gs.lat, gs.lon]);
+
+  const radius =
+    (gs.zoneSize / 1.1) *
+    Math.pow(ZONE_ZOOM_FACTOR, map.getZoom() - baseZoom);
+
+  for (let tries = 0; tries < 160; tries++) {
+    const angle = Math.random() * Math.PI * 2;
+    const distance = Math.sqrt(Math.random()) * radius * 0.82;
+
+    const rawX = center.x - left + Math.cos(angle) * distance;
+    const wrappedX = ((rawX % width) + width) % width;
+    const y = center.y + Math.sin(angle) * distance;
+
+    // Wrap horizontally only.
+    if (y < top || y > bottom) continue;
+
+    const candidate = map.containerPointToLatLng(
+      L.point(left + wrappedX, y)
+    );
+
+    if (
+      candidate.lng >= PLAY_LON_MIN &&
+      candidate.lng <= PLAY_LON_MAX &&
+      candidate.lat >= PLAY_LAT_MIN &&
+      candidate.lat <= PLAY_LAT_MAX &&
+      isPointOnLand(candidate.lat, candidate.lng, countries)
+    ) {
+      return {
+        lat: candidate.lat,
+        lon: candidate.lng,
+      };
+    }
+  }
+
+  // Fallback remains on land and inside this GS zone.
+  return { lat: gs.lat, lon: gs.lon };
+}
 
 export default function SSAMap({
   showControls = false,
@@ -663,22 +709,17 @@ export default function SSAMap({
     setCountries,
   ] = useState(null);
 
-  const [
-    groundStations,
-    setGroundStations,
-  ] = useState([]);
-
-  const [
-    selectedGroundStation,
-    setSelectedGroundStation,
-  ] = useState(0);
-
-  const [
-    satellites,
-    setSatellites,
-    ] = useState([]);
-
-  const [round, setRound] = useState(1);
+  const game = useSharedGame(showControls);
+  const groundStations = game.state?.groundStations ?? [];
+  const satellites = game.state?.satellites ?? [];
+  const round = game.state?.round ?? 1;
+  const hitBias = game.state?.hitBias ?? 60;
+  const [selectedGroundStationId, setSelectedGroundStation] = useState(1);
+  const selectedGroundStation = groundStations.some((gs) => gs.id === selectedGroundStationId)
+    ? selectedGroundStationId : groundStations[0]?.id;
+  const [landError, setLandError] = useState("");
+  const mapRef = useRef(null);
+  const baseZoneZoomRef = useRef(null);
 
   // LOAD LAND DATA
 
@@ -700,136 +741,96 @@ export default function SSAMap({
         setCountries(data);
       })
 
-      .catch((err) => {
-        console.error(
-          "Failed to load countries:",
-          err
-        );
+      .catch(() => {
+        setLandError("Could not load country boundaries. Reload to retry.");
       });
   }, []);
 
 
-  // GENERATE 14 GROUND STATIONS
+  // Only authenticated Admin actions create or mutate the shared game.
+  function handleZoneSizeChange(newSize) {
+    if (!game.state) return;
+    void game.commit({ ...game.state, groundStations: groundStations.map((gs) =>
+      gs.id === selectedGroundStation ? { ...gs, zoneSize: newSize } : gs) });
+  }
 
-  useEffect(() => {
-    if (!countries) {
-      return;
-    }
+  function handleHitBiasChange(value) {
+    if (game.state) void game.commit({ ...game.state, hitBias: value });
+  }
 
-    const stations =
-      generateGroundStations({
-        grids:
-          GAME_GRIDS,
+  function handleDeleteSatellite(id) {
+    if (game.state) void game.commit({ ...game.state, satellites: satellites.filter((satellite) => satellite.id !== id) });
+  }
 
-        countriesGeoJSON:
-          countries,
-
-        colors:
-          COLORS,
-
-        nTeams:
-          N_TEAMS,
-
-        minDistance:
-          MIN_GS_DISTANCE,
-
-        defaultZoneSize:
-          DEFAULT_ZONE_SIZE,
-      });
-
-      const startingSatellites =
-        stations.map(
-            (gs, index) => ({
-            id: index + 1,
-            name:
-                `Satellite ${index + 1}`,
-
-            color:
-                COLORS[index],
-
-            lon:
-                gs.lon,
-
-            lat:
-                gs.lat,
-
-            targetGroundStation:
-                gs.id,
-            })
-        );
-
-setSatellites(
-  startingSatellites
-);
-
-    setGroundStations(
-      stations
-    );
-  }, [countries]);
-
-
-  // CHANGE ZONE OF SELECTED GS
-
-  function handleZoneSizeChange(
-    newSize
-  ) {
-    setGroundStations(
-      (previous) =>
-        previous.map(
-          (gs, index) =>
-            index ===
-            selectedGroundStation
-              ? {
-                  ...gs,
-                  zoneSize: newSize,
-                }
-              : gs
-        )
-    );
+  function handleDeleteGroundStation(id) {
+    if (!game.state) return;
+    void game.commit({ ...game.state,
+      groundStations: groundStations.filter((gs) => gs.id !== id),
+      satellites: satellites.map((satellite) => satellite.targetGroundStation === id
+        ? { ...satellite, targetGroundStation: null } : satellite),
+    });
   }
 
   function handleNextRound() {
-  if (!countries || satellites.length !== N_TEAMS) return;
+  const map = mapRef.current;
 
-  // Shuffle grids to spread satellites around the world.
-  const shuffle = (array) => {
-    const result = [...array];
+  if (
+    !map ||
+    !countries || !game.state
+  ) {
+    return;
+  }
 
-    for (let i = result.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [result[i], result[j]] = [result[j], result[i]];
-    }
-
-    return result;
-  };
-
+  const targets = shuffleArray(groundStations);
   const gridSequence = [
-    ...shuffle(GAME_GRIDS),
-    ...shuffle(GAME_GRIDS),
+    ...shuffleArray(GAME_GRIDS),
+    ...shuffleArray(GAME_GRIDS),
   ];
 
-  const nextSatellites = satellites.map((satellite, index) => {
-    const grid = gridSequence[index];
+  const baseZoom = baseZoneZoomRef.current ?? map.getZoom();
 
-    const position = randomLandPointInGrid(
-      grid,
-      countries
-    );
+  const nextSatellites = satellites.map((satellite, index) => {
+    let position;
+    let targetGroundStation = null;
+
+    if (targets.length && Math.random() < hitBias / 100) {
+      const gs = targets[index % targets.length];
+
+      position = biasedPointNearGroundStation(
+        gs,
+        map,
+        countries,
+        baseZoom
+      );
+
+      targetGroundStation = gs.id;
+    } else {
+      position = randomLandPointInGrid(
+        gridSequence[index],
+        countries
+      );
+
+      if (!position) {
+        position = {
+          lat: satellite.lat,
+          lon: satellite.lon,
+        };
+      }
+    }
 
     return {
       ...satellite,
-      lat: position?.lat ?? satellite.lat,
-      lon: position?.lon ?? satellite.lon,
-      targetGroundStation: null,
+      lat: position.lat,
+      lon: position.lon,
+      targetGroundStation,
     };
   });
 
-  setSatellites(nextSatellites);
-  setRound((previous) => previous + 1);
+  void game.commit({ ...game.state, satellites: nextSatellites, round: round + 1 });
 }
 
-function handleResetGame() {
-  if (!countries) return;
+async function handleResetGame() {
+  if (!countries || !game.authenticated || game.saving) return;
 
   const stations = generateGroundStations({
     grids: GAME_GRIDS,
@@ -849,10 +850,8 @@ function handleResetGame() {
     targetGroundStation: gs.id,
   }));
 
-  setGroundStations(stations);
-  setSatellites(startingSatellites);
-  setSelectedGroundStation(0);
-  setRound(1);
+  const saved = await game.commit({ groundStations: stations, satellites: startingSatellites, round: 1, hitBias });
+  if (saved) setSelectedGroundStation(1);
 }
 
   const playBounds = [
@@ -870,15 +869,31 @@ function handleResetGame() {
 
   return (
     <div
+      data-testid="ssa-game"
+      data-state-version={game.updatedAt ?? ""}
       style={{
         width: "100%",
       }}
     >
 
+      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
+        <span role="status" data-testid="ssa-status">
+          {game.connection} · {game.saving ? "Saving…" : game.state ? `Round: ${round}` : game.loaded ? "Waiting for Admin to start the game" : "Loading shared game…"}
+        </span>
+        {showControls && <SSASession authenticated={game.authenticated} login={game.login} logout={game.logout} />}
+        {showControls && game.authenticated && game.loaded && !game.state &&
+          <button onClick={handleResetGame} disabled={!countries || game.saving} style={{ padding: "9px 14px", background: "#22c55e", color: "#111827", borderRadius: 8 }}>
+            Start Game
+          </button>}
+      </div>
+      {(game.error || landError) && <p role="alert">{game.error || landError}</p>}
+
       {/* ADMIN CONTROLS */}
 
-      {showControls && (
+      {showControls && game.authenticated && game.state && (
+        <>
         <SSAControls
+          disabled={game.saving || !countries || !game.loaded}
           groundStations={
             groundStations
           }
@@ -898,11 +913,24 @@ function handleResetGame() {
           round={round}
 
           onNextRound={handleNextRound}
-          
+
           onResetGame={handleResetGame}
+
+          hitBias={hitBias}
+
+          onHitBiasChange={handleHitBiasChange}
+          canUndo={game.canUndo}
+          onUndo={game.undo}
         />
+        {game.state && <SSAEntityControls
+          groundStations={groundStations} satellites={satellites}
+          onDeleteSatellite={handleDeleteSatellite} onDeleteGroundStation={handleDeleteGroundStation}
+          disabled={game.saving || !game.loaded}
+        />}
+        </>
       )}
 
+      {game.state && <SSATeamLegend groundStations={groundStations} satellites={satellites} />}
 
       {/* MAP */}
 
@@ -952,6 +980,8 @@ function handleResetGame() {
           scrollWheelZoom={
             true
           }
+
+          ref={mapRef}
         >
             <SatellitePane />
 
@@ -992,9 +1022,8 @@ function handleResetGame() {
           {/* COVERAGE */}
 
           <CoverageZones
-            groundStations={
-              groundStations
-            }
+            groundStations={groundStations}
+            baseZoneZoomRef={baseZoneZoomRef}
           />
 
 
