@@ -7,7 +7,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:ssa": "node --env-file=.env.local scripts/test-ssa.mjs",
+    "test:ssa:api": "node --env-file=.env.local scripts/test-ssa-api.mjs",
+    "test:ssa:state": "node --test scripts/test-ssa-state.mjs",
+    "ssa:migrate": "node --env-file=.env.local scripts/apply-ssa-migration.mjs"
   },
   "dependencies": {
     "@portabletext/react": "^8.0.1",
@@ -16,16 +20,20 @@
     "@sanity/icons": "^5.2.2",
     "@sanity/image-url": "^2.1.1",
     "@sanity/vision": "^6.15.0",
+    "@supabase/supabase-js": "^2.118.0",
     "@tailwindcss/postcss": "^4.3.3",
+    "@turf/turf": "^7.4.0",
     "aos": "^2.3.4",
     "gray-matter": "^4.0.3",
     "hamburger-react": "^2.5.2",
+    "leaflet": "^1.9.4",
     "next": "^16.3.5",
     "next-sanity": "^13.3.4",
     "prop-types": "^15.8.1",
     "raw-loader": "^4.0.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "react-leaflet": "^5.0.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "sanity": "^6.15.0",
@@ -33,6 +41,7 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "eslint": "^9",
     "eslint-config-next": "^16.3.5",
     "webpack": "^5.111.1"

@@ -5,6 +5,7 @@ import CardList from "../../../components/CardList";
 import MeetingCardList from "../../../components/MeetingCardList";
 import sortByTimestamp from "../../../utils/sortByTimestamp";
 import { getAllPosts, getAllMeetingPosts } from "../../sanity/sanityClient";
+import Link from "next/link";
 
 const Activity = (props) => {
   return (
@@ -21,6 +22,23 @@ const Activity = (props) => {
               Activity
             </h1>
           </div>
+
+          <section
+            aria-labelledby="ssa-game-heading"
+            className="mx-4 my-8 flex flex-col gap-5 rounded-2xl border border-cyan-300/40 bg-slate-900/80 p-6 text-white sm:flex-row sm:items-center sm:justify-between lg:mx-8"
+          >
+            <div>
+              <p className="mb-2 text-sm font-semibold tracking-widest text-cyan-300">INTERACTIVE ACTIVITY</p>
+              <h2 id="ssa-game-heading" className="text-2xl font-bold sm:text-3xl">SSA Satellite Party Game</h2>
+              <p className="mt-2 max-w-2xl text-gray-300">เกมดาวเทียมและสถานีภาคพื้นดินสำหรับ 14 ทีม ดูแผนที่และติดตามเกมร่วมกันแบบเรียลไทม์</p>
+            </div>
+            <Link
+              href="/ssa"
+              className="inline-flex shrink-0 items-center justify-center rounded-lg bg-cyan-300 px-6 py-3 font-bold text-slate-950 transition hover:bg-cyan-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300"
+            >
+              เข้าเกม SSA →
+            </Link>
+          </section>
 
           <div className="flex flex-col lg:grid mt-8">
             <a className="anchor" id="online-meeting"></a>
