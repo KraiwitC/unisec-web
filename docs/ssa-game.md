@@ -59,8 +59,13 @@ public deployment. Changing the configured password invalidates existing session
 state, and `expectedUpdatedAt` (null for a missing row). No browser receives the
 privileged key. `GET /api/ssa/events` subscribes to Supabase Postgres Changes on the
 server and relays validated snapshots via read-only Server-Sent Events. Browser
-broadcasts cannot control the game. Reconnects trigger a fresh snapshot; a 15-second
-backup fetch and visibility/online listeners recover missed updates.
+broadcasts cannot control the game. Live events render as soon as they arrive.
+Healthy streams retain a 15-second safety fetch; connecting or broken streams use
+a 2-second backup fetch (plus request/network time). Reconnection requests a fresh
+snapshot and SSE advertises a 1-second reconnect delay. Focus, visibility, and online
+listeners catch up immediately after returning to the game. Named heartbeats every
+15 seconds let the browser replace a silent stream after 35 seconds. Snapshot reads
+are deduplicated and time out after 8 seconds so a hung request cannot block recovery.
 An authenticated `PUT` with `{ "action": "undo", "expectedUpdatedAt": "..." }`
 restores the last saved snapshot atomically, with the same stale-write protection.
 
@@ -84,6 +89,10 @@ videos, or screenshots of password entry are saved.
 `pnpm lint` and `pnpm build` check the repository and production bundle.
 `pnpm test:ssa:state` checks validation, bounded persistent Undo, history isolation,
 and stable team identities after deletion without using the database.
+`pnpm test:ssa:sync` uses an iPad-sized browser, mocked read-only snapshots/events,
+and a controlled clock to check rapid fallback, live delivery, reconnect errors,
+tab resume, silent stream recovery, and hung/overlapping reads. It never writes to
+the database. It emulates the viewport and touch input, not actual iPad Safari.
 `pnpm test:ssa:api` checks authentication, write protection, persistence, and actual
 Supabase Realtime delivery without launching a browser or changing game data.
 Set `SSA_TEST_BASE_URL` to test another local port (for example a production server

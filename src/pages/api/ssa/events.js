@@ -21,13 +21,15 @@ export default function handler(req, res) {
   const send = (event, data) => {
     if (!closed) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   };
+  // EventSource uses this delay after hosting expiry or a dropped connection.
+  res.write("retry: 1000\n\n");
   const cleanup = () => {
     if (closed) return;
     closed = true;
     clearInterval(heartbeat);
     if (channel) void supabase.removeChannel(channel);
   };
-  const heartbeat = setInterval(() => { if (!closed) res.write(": heartbeat\n\n"); }, 15_000);
+  const heartbeat = setInterval(() => send("heartbeat", {}), 15_000);
   res.on("close", cleanup);
   channel = supabase.channel(`ssa-viewer-${crypto.randomUUID()}`)
     .on("postgres_changes", { event: "*", schema: "public", table: "ssa_game_state", filter: "id=eq.1" }, ({ new: row }) => {
